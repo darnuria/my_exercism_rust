@@ -1,7 +1,7 @@
 use std::fmt::Write;
 
 pub fn raindrops(n: u32) -> String {
-    let s:[u8; 3] = [
+    let s: [u8; 3] = [
         if n % 3 == 0 { 2 } else { 0 },
         if n % 5 == 0 { 4 } else { 0 },
         if n % 7 == 0 { 8 } else { 0 },
