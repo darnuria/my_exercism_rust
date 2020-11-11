@@ -1,4 +1,5 @@
 // algorithm from wikipedia: https://en.wikipedia.org/wiki/Primality_test
+// It's kinda raw but... fast? O.o'
 fn is_prime(n: u32) -> bool {
     if n <= 3 {
         return n > 1;
@@ -17,11 +18,8 @@ fn is_prime(n: u32) -> bool {
 }
 
 pub fn nth(n: u32) -> u32 {
-    // Unwraped because the exercism signature do not let
-    // expression of failure. :(
     (2..)
         .filter(|&e| is_prime(e))
-        .take((n + 1) as usize)
-        .last()
+        .nth((n + 1) as usize)
         .unwrap()
 }
