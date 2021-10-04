@@ -1,20 +1,14 @@
+use std::borrow::Cow;
+
 pub fn verse(n: u32) -> String {
     let (quantity, modifier, left) = match n {
-        0 => (
-            "no more".to_string(),
-            "s".to_string(),
-            "99 bottles".to_string(),
-        ),
-        1 => (
-            "1".to_string(),
-            "".to_string(),
-            "no more bottles".to_string(),
-        ),
-        2 => ("2".to_string(), "s".to_string(), "1 bottle".to_string()),
+        0 => ("no more".into(), "s", "99 bottles".into()),
+        1 => ("1".into(), "", "no more bottles".into()),
+        2 => ("2".into(), "s", "1 bottle".into()),
         n => (
-            n.to_string(),
-            "s".to_string(),
-            format!("{} bottles", (n - 1).to_string()),
+            Cow::Owned(n.to_string()),
+            "s",
+            Cow::Owned(format!("{} bottles", (n - 1).to_string())),
         ),
     };
 
