@@ -1,16 +1,12 @@
+// filter from 1 to limit -1, any factor who is multiple then sum it up.
+// Being factor means l % f == 0.
 pub fn sum_of_multiples(limit: u32, factors: &[u32]) -> u32 {
-    let mut multiples = std::collections::HashSet::new();
-    let mut s = 0;
-    for x in 0..limit {
-        for &y in factors {
-            if y == 0 {
-                continue;
-            }
-            if x % y == 0 && !multiples.contains(&x) {
-                s += x;
-                multiples.insert(x);
-            }
-        }
-    }
-    s
+    (1..limit)
+        .filter(|l| {
+            factors
+                .iter()
+                .filter(|&&factors| factors > 0)
+                .any(|f| l % f == 0)
+        })
+        .sum()
 }
