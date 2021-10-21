@@ -1,0 +1,13 @@
+[package]
+edition = "2021"
+name = "prime_factors"
+version = "1.1.0"
+
+[dependencies]
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "my_benchmark"
+harness = false
