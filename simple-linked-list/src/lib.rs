@@ -1,14 +1,21 @@
-use std::iter::FromIterator;
+use std::{collections::linked_list, iter::FromIterator};
+
+struct Cell<T> {
+    val: T,
+    next: Option<Box<Cell<T>>>,
+}
 
 pub struct SimpleLinkedList<T> {
-    // Delete this field
-    // dummy is needed to avoid unused parameter error during compilation
-    dummy: ::std::marker::PhantomData<T>,
+    length: usize,
+    list: Option<Box<Cell<T>>>,
 }
 
 impl<T> SimpleLinkedList<T> {
     pub fn new() -> Self {
-        unimplemented!()
+        SimpleLinkedList {
+            length: 0,
+            list: None,
+        }
     }
 
     // You may be wondering why it's necessary to have is_empty()
@@ -17,33 +24,59 @@ impl<T> SimpleLinkedList<T> {
     // whereas is_empty() is almost always cheap.
     // (Also ask yourself whether len() is expensive for SimpleLinkedList)
     pub fn is_empty(&self) -> bool {
-        unimplemented!()
+        self.len() == 0
     }
 
     pub fn len(&self) -> usize {
-        unimplemented!()
+        self.length
     }
 
-    pub fn push(&mut self, _element: T) {
-        unimplemented!()
+    pub fn push(&mut self, val: T) {
+        self.length += 1;
+        self.list = Some(Box::new(Cell {
+            val,
+            next: self.list.take(),
+        }));
     }
 
     pub fn pop(&mut self) -> Option<T> {
-        unimplemented!()
+        match self.list.take() {
+            None => None,
+            Some(e) => {
+                self.length -= 1;
+                self.list = e.next;
+                Some(e.val)
+            }
+        }
     }
 
     pub fn peek(&self) -> Option<&T> {
-        unimplemented!()
+        match self.list {
+            None => None,
+            Some(ref e) => Some(&e.val),
+        }
     }
 
-    pub fn rev(self) -> SimpleLinkedList<T> {
-        unimplemented!()
+    pub fn rev(mut self) -> SimpleLinkedList<T> {
+        let mut lst = SimpleLinkedList::new();
+        if self.is_empty() { return lst; }
+        while let Some(e) = self.pop() {
+            lst.push(e);
+        }
+        lst
     }
 }
 
 impl<T> FromIterator<T> for SimpleLinkedList<T> {
-    fn from_iter<I: IntoIterator<Item = T>>(_iter: I) -> Self {
-        unimplemented!()
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = T>,
+    {
+        let mut acc = SimpleLinkedList::new();
+        for e in iter {
+            acc.push(e);
+        }
+        acc
     }
 }
 
@@ -59,7 +92,11 @@ impl<T> FromIterator<T> for SimpleLinkedList<T> {
 // demands more of the student than we expect at this point in the track.
 
 impl<T> From<SimpleLinkedList<T>> for Vec<T> {
-    fn from(mut _linked_list: SimpleLinkedList<T>) -> Vec<T> {
-        unimplemented!()
+    fn from(mut linked_list: SimpleLinkedList<T>) -> Vec<T> {
+        let mut v = std::collections::VecDeque::with_capacity(linked_list.len());
+        while let Some(e) = linked_list.pop() {
+            v.push_front(e)
+        }
+        v.into()
     }
 }
