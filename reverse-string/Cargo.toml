@@ -1,10 +1,11 @@
-[package]
-edition = "2018"
-name = "reverse_string"
-version = "1.2.0"
+[dependencies]
+
+unicode-segmentation = "1.8.0"
 
 [features]
 grapheme = []
 
-[dependencies]
-unicode-segmentation = "1.6.0"
+[package]
+edition = "2018"
+name = "reverse_string"
+version = "1.2.0"
