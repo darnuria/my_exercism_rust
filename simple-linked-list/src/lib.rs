@@ -26,6 +26,7 @@ impl<'a, T> Iterator for IterSimpleLinkedList<'a, T> {
 }
 
 impl<T> SimpleLinkedList<T> {
+    /// Allocate a new empty list
     pub fn new() -> Self {
         SimpleLinkedList {
             length: 0,
@@ -33,23 +34,23 @@ impl<T> SimpleLinkedList<T> {
         }
     }
 
+    /// Not tested attempt at implementing Iterator.
     fn iter<'a>(&'a self) -> IterSimpleLinkedList<'a, T> {
         IterSimpleLinkedList { inner: &self.list }
     }
 
-    // You may be wondering why it's necessary to have is_empty()
-    // when it can easily be determined from len().
-    // It's good custom to have both because len() can be expensive for some types,
-    // whereas is_empty() is almost always cheap.
-    // (Also ask yourself whether len() is expensive for SimpleLinkedList)
+    /// Return true if the list is empty.
     pub fn is_empty(&self) -> bool {
-        self.len() == 0
+        self.list.is_none()
     }
 
+    /// Returns the size of the list.
+    /// In constant time because we keep in the list handle a counter.
     pub fn len(&self) -> usize {
         self.length
     }
 
+    /// Push front and allocate on heap a value in list.
     pub fn push(&mut self, val: T) {
         self.length += 1;
         self.list = Some(Box::new(Cell {
@@ -58,6 +59,7 @@ impl<T> SimpleLinkedList<T> {
         }));
     }
 
+    /// Returns the last element (pop front) deallocate the node on heap.
     pub fn pop(&mut self) -> Option<T> {
         match self.list.take() {
             None => None,
@@ -69,6 +71,7 @@ impl<T> SimpleLinkedList<T> {
         }
     }
 
+    /// Returns a reference on the element at the head of the list.
     pub fn peek(&self) -> Option<&T> {
         match self.list {
             None => None,
@@ -76,11 +79,12 @@ impl<T> SimpleLinkedList<T> {
         }
     }
 
-    // Maybe it can be done without reallocating at cost of some CPU usage
-    // With memory cursed manipulation.
+    /// Reverse the list
+    /// Downside we allocate
+    /// Upside it's dead simple.
     pub fn rev(mut self) -> SimpleLinkedList<T> {
-        // Downside we allocate
-        // Upside it's dead simple.
+        // Maybe it can be done without reallocating at cost of some CPU usage
+        // With memory cursed manipulation.
         let mut lst = SimpleLinkedList::new();
         if self.is_empty() {
             return lst;
@@ -93,6 +97,7 @@ impl<T> SimpleLinkedList<T> {
 }
 
 impl<T> FromIterator<T> for SimpleLinkedList<T> {
+    /// Converts an iterator into a `SimpleLinkedList`
     fn from_iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = T>,
@@ -105,18 +110,9 @@ impl<T> FromIterator<T> for SimpleLinkedList<T> {
     }
 }
 
-// In general, it would be preferable to implement IntoIterator for SimpleLinkedList<T>
-// instead of implementing an explicit conversion to a vector. This is because, together,
-// FromIterator and IntoIterator enable conversion between arbitrary collections.
-// Given that implementation, converting to a vector is trivial:
-//
-// let vec: Vec<_> = simple_linked_list.into_iter().collect();
-//
-// The reason this exercise's API includes an explicit conversion to Vec<T> instead
-// of IntoIterator is that implementing that interface is fairly complicated, and
-// demands more of the student than we expect at this point in the track.
 
 impl<T> From<SimpleLinkedList<T>> for Vec<T> {
+    /// Make a `Vec` out of a SimpleLinkedList
     fn from(mut linked_list: SimpleLinkedList<T>) -> Vec<T> {
         let mut v = std::collections::VecDeque::with_capacity(linked_list.len());
         while let Some(e) = linked_list.pop() {
