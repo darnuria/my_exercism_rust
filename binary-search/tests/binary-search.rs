@@ -81,14 +81,12 @@ fn nothing_is_found_when_the_left_and_right_bounds_cross() {
 }
 
 #[test]
-
 #[cfg(feature = "generic")]
 fn works_for_arrays() {
     assert_eq!(find([6], 6), Some(0));
 }
 
 #[test]
-
 #[cfg(feature = "generic")]
 fn works_for_vec() {
     let vector = vec![6];
@@ -97,7 +95,6 @@ fn works_for_vec() {
 }
 
 #[test]
-
 #[cfg(feature = "generic")]
 fn works_for_str_elements() {
     assert_eq!(find(["a"], "a"), Some(0));

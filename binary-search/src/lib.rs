@@ -1,15 +1,12 @@
 use std::cmp::Ordering;
 
+// Thanks a mentoring I learned about ? for Option. :)
 pub fn find(mut array: &[i32], key: i32) -> Option<usize> {
-    let kay = Some(&key);
-    if array.first() > kay || array.last() < kay {
+    if array.first()? > &key || array.last()? < &key {
         return None;
     }
     let mut offset = 0;
-    loop {
-        if array.is_empty() {
-            break None;
-        }
+    while !array.is_empty() {
         let mid = array.len() / 2;
         match key.cmp(&array[mid]) {
             Ordering::Greater => {
@@ -21,4 +18,5 @@ pub fn find(mut array: &[i32], key: i32) -> Option<usize> {
             Ordering::Less => array = &array[..mid],
         }
     }
+    None
 }
