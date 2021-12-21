@@ -10,12 +10,31 @@ pub struct SimpleLinkedList<T> {
     list: Option<Box<Cell<T>>>,
 }
 
+struct IterSimpleLinkedList<'a, T: 'a> {
+    inner: &'a Option<Box<Cell<T>>>,
+}
+
+impl<'a, T> Iterator for IterSimpleLinkedList<'a, T> {
+    type Item = &'a T;
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(ref elem) = self.inner {
+            self.inner = &elem.next;
+            return Some(&elem.val);
+        }
+        None
+    }
+}
+
 impl<T> SimpleLinkedList<T> {
     pub fn new() -> Self {
         SimpleLinkedList {
             length: 0,
             list: None,
         }
+    }
+
+    fn iter<'a>(&'a self) -> IterSimpleLinkedList<'a, T> {
+        IterSimpleLinkedList { inner: &self.list }
     }
 
     // You may be wondering why it's necessary to have is_empty()
@@ -57,9 +76,15 @@ impl<T> SimpleLinkedList<T> {
         }
     }
 
+    // Maybe it can be done without reallocating at cost of some CPU usage
+    // With memory cursed manipulation.
     pub fn rev(mut self) -> SimpleLinkedList<T> {
+        // Downside we allocate
+        // Upside it's dead simple.
         let mut lst = SimpleLinkedList::new();
-        if self.is_empty() { return lst; }
+        if self.is_empty() {
+            return lst;
+        }
         while let Some(e) = self.pop() {
             lst.push(e);
         }
