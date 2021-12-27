@@ -61,38 +61,34 @@ impl<T> SimpleLinkedList<T> {
 
     /// Returns the last element (pop front) deallocate the node on heap.
     pub fn pop(&mut self) -> Option<T> {
-        match self.list.take() {
-            None => None,
-            Some(e) => {
-                self.length -= 1;
-                self.list = e.next;
-                Some(e.val)
-            }
-        }
+        self.list.take().map(|e| {
+            self.length -= 1;
+            self.list = e.next;
+            e.val
+        })
     }
 
     /// Returns a reference on the element at the head of the list.
     pub fn peek(&self) -> Option<&T> {
-        match self.list {
-            None => None,
-            Some(ref e) => Some(&e.val),
-        }
+        self.list.as_ref().map(|e| &e.val)
     }
 
     /// Reverse the list
-    /// Downside we allocate
-    /// Upside it's dead simple.
+    /// Upside it's fast: Downside it's little bit mind-cursed.
+    /// Inspired by Elsegahy solution (maybe inspired by others)
     pub fn rev(mut self) -> SimpleLinkedList<T> {
-        // Maybe it can be done without reallocating at cost of some CPU usage
-        // With memory cursed manipulation.
-        let mut lst = SimpleLinkedList::new();
         if self.is_empty() {
-            return lst;
+            return self;
         }
-        while let Some(e) = self.pop() {
-            lst.push(e);
+        let mut iter = self.list;
+        let mut new_head = None;
+        while let Some(mut e) = iter.take() {
+            iter = e.next;
+            e.next = new_head;
+            new_head = Some(e);
         }
-        lst
+        self.list = new_head;
+        self
     }
 }
 
