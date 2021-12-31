@@ -17,11 +17,10 @@ struct IterSimpleLinkedList<'a, T: 'a> {
 impl<'a, T> Iterator for IterSimpleLinkedList<'a, T> {
     type Item = &'a T;
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(ref elem) = self.inner {
-            self.inner = &elem.next;
-            return Some(&elem.val);
-        }
-        None
+        self.inner.as_ref().map(|e| {
+            self.inner = &e.next;
+            &e.val
+        })
     }
 }
 
