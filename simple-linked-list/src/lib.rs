@@ -1,4 +1,4 @@
-use std::{collections::linked_list, iter::FromIterator};
+use std::{iter::FromIterator};
 
 struct Cell<T> {
     val: T,
@@ -89,6 +89,12 @@ impl<T> SimpleLinkedList<T> {
         }
         self.list = new_head;
         self
+    }
+}
+
+impl<T> Default for SimpleLinkedList<T> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
