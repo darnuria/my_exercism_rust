@@ -1,4 +1,4 @@
-use std::{iter::FromIterator};
+use std::iter::FromIterator;
 
 struct Cell<T> {
     val: T,
@@ -111,7 +111,6 @@ impl<T> FromIterator<T> for SimpleLinkedList<T> {
         acc
     }
 }
-
 
 impl<T> From<SimpleLinkedList<T>> for Vec<T> {
     /// Make a `Vec` out of a SimpleLinkedList
