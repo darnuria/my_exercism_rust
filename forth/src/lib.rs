@@ -44,28 +44,20 @@ impl Forth {
             let mut instr_buff = [0_u8; 4];
             copy_bytes(instr.as_bytes(), &mut instr_buff);
             instr_buff.make_ascii_lowercase();
-            match &instr_buff[..instr.len()] {
-                b"+" => {
+            let instr = &instr_buff[..instr.len()];
+            match instr {
+                b"+" | b"-" | b"/" | b"*" => {
                     let a = self.stack.pop().ok_or(Error::StackUnderflow)?;
                     let b = self.stack.pop().ok_or(Error::StackUnderflow)?;
-                    self.stack.push(a + b);
-                }
-                b"-" => {
-                    let a = self.stack.pop().ok_or(Error::StackUnderflow)?;
-                    let b = self.stack.pop().ok_or(Error::StackUnderflow)?;
-                    self.stack.push(b - a);
-                }
-                b"/" => {
-                    let a = self.stack.pop().ok_or(Error::StackUnderflow)?;
-                    let b = self.stack.pop().ok_or(Error::StackUnderflow)?;
-                    self.stack
-                        .push(b.checked_div(a).ok_or(Error::DivisionByZero)?);
-                }
-                b"*" => {
-                    let a = self.stack.pop().ok_or(Error::StackUnderflow)?;
-                    let b = self.stack.pop().ok_or(Error::StackUnderflow)?;
-                    self.stack.push(a * b);
-                }
+                    let result = match instr {
+                        b"+" => a + b,
+                        b"-" => b - a,
+                        b"/" => b.checked_div(a).ok_or(Error::DivisionByZero)?,
+                        b"*" => a * b,
+                        _ => unreachable!(),
+                    };
+                    self.stack.push(result);
+                },
                 b"dup" => {
                     let d = *self.stack.last().ok_or(Error::StackUnderflow)?;
                     self.stack.push(d);
