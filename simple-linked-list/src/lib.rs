@@ -60,11 +60,10 @@ impl<T> SimpleLinkedList<T> {
 
     /// Returns the last element (pop front) deallocate the node on heap.
     pub fn pop(&mut self) -> Option<T> {
-        self.list.take().map(|e| {
-            self.length -= 1;
-            self.list = e.next;
-            e.val
-        })
+        let list = self.list.take()?;
+        self.length -= 1;
+        self.list = list.next;
+        Some(list.val)
     }
 
     /// Returns a reference on the element at the head of the list.

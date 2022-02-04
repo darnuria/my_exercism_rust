@@ -13,6 +13,18 @@ pub enum Error {
     InvalidWord,
 }
 
+fn copy_bytes(src: &[u8], dst: &mut [u8]) {
+    for (s, d) in src.iter().zip(dst) {
+        *d = *s;
+    }
+}
+
+impl Default for Forth {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Forth {
     pub fn new() -> Forth {
         Forth {
@@ -26,8 +38,13 @@ impl Forth {
 
     pub fn eval(&mut self, input: &str) -> Result {
         for instr in input.split_whitespace() {
-            let instr = instr.as_bytes();
-            match instr {
+            // Happy-path
+            // Get an array of four bytes, copy the instruction
+            // Then match.
+            let mut instr_buff = [0_u8; 4];
+            copy_bytes(instr.as_bytes(), &mut instr_buff);
+            instr_buff.make_ascii_lowercase();
+            match &instr_buff[..instr.len()] {
                 b"+" => {
                     let a = self.stack.pop().ok_or(Error::StackUnderflow)?;
                     let b = self.stack.pop().ok_or(Error::StackUnderflow)?;
@@ -49,14 +66,14 @@ impl Forth {
                     let b = self.stack.pop().ok_or(Error::StackUnderflow)?;
                     self.stack.push(a * b);
                 }
-                b"DUP" | b"dup" => {
+                b"dup" => {
                     let d = *self.stack.last().ok_or(Error::StackUnderflow)?;
                     self.stack.push(d);
                 }
-                b"drop" | b"DROP" => {
+                b"drop" => {
                     self.stack.pop().ok_or(Error::StackUnderflow)?;
                 }
-                b"swap" | b"SWAP" => {
+                b"swap" => {
                     let len = self.stack.len();
                     let penult_index = len.checked_sub(2).ok_or(Error::StackUnderflow)?;
                     let last_index = len.checked_sub(1).ok_or(Error::StackUnderflow)?;
@@ -67,7 +84,7 @@ impl Forth {
                     }
                     self.stack.swap(last_index, penult_index);
                 }
-                b"over" | b"Over" => {
+                b"over" => {
                     self.stack.last().ok_or(Error::StackUnderflow)?;
                     let penult_index = self
                         .stack
