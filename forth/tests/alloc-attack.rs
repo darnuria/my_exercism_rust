@@ -10,8 +10,8 @@
 
 use forth::Forth;
 
-#[test]
 #[ignore]
+#[test]
 fn alloc_attack() {
     let mut f = Forth::new();
     f.eval(": a 0 drop ;").unwrap();
