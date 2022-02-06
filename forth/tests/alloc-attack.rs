@@ -10,7 +10,6 @@
 
 use forth::Forth;
 
-#[ignore]
 #[test]
 fn alloc_attack() {
     let mut f = Forth::new();

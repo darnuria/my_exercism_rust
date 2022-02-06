@@ -201,7 +201,7 @@ fn over_with_three() {
 #[test]
 fn over_case_insensitive() {
     let mut f = Forth::new();
-    assert!(f.eval("1 2 OVER Over over").is_ok());
+    assert_eq!(f.eval("1 2 OVER Over over"), Ok(()));
     assert_eq!(vec![1, 2, 1, 2, 1], f.stack());
 }
 
@@ -256,10 +256,17 @@ fn user_defined_words_are_case_insensitive() {
 }
 
 #[test]
+fn dup4() {
+    let mut f = Forth::new();
+    assert_eq!(f.eval("1 dup DUP Dup"), Ok(()));
+    assert_eq!(vec![1, 1, 1, 1], f.stack());
+}
+
+#[test]
 fn definitions_are_case_insensitive() {
     let mut f = Forth::new();
-    assert!(f.eval(": SWAP DUP Dup dup ;").is_ok());
-    assert!(f.eval("1 swap").is_ok());
+    assert_eq!(f.eval(": SWAP DUP Dup dup ;"), Ok(()));
+    assert_eq!(f.eval("1 swap"), Ok(()));
     assert_eq!(vec![1, 1, 1, 1], f.stack());
 }
 
@@ -274,10 +281,10 @@ fn redefining_a_built_in_operator() {
 #[test]
 fn can_use_different_words_with_the_same_name() {
     let mut f = Forth::new();
-    assert!(f.eval(": foo 5 ;").is_ok());
-    assert!(f.eval(": bar foo ;").is_ok());
-    assert!(f.eval(": foo 6 ;").is_ok());
-    assert!(f.eval("bar foo").is_ok());
+    assert_eq!(f.eval(": foo 5 ;"), Ok(()));
+    assert_eq!(f.eval(": bar foo ;"), Ok(()));
+    assert_eq!(f.eval(": foo 6 ;"), Ok(()));
+    assert_eq!(f.eval("bar foo"), Ok(()));
     assert_eq!(vec![5, 6], f.stack());
 }
 
