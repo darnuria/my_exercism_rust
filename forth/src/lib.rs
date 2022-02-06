@@ -68,14 +68,11 @@ impl Forth {
     }
 
     fn swap(stack: &mut Vec<i16>) -> Result {
-        let len = stack.len();
-        let penult_index = len.checked_sub(2).ok_or(Error::StackUnderflow)?;
-        let last_index = len.checked_sub(1).ok_or(Error::StackUnderflow)?;
-        // Awkard overflow check
-        {
-            stack.get(penult_index).ok_or(Error::StackUnderflow)?;
-            stack.last().ok_or(Error::StackUnderflow)?;
+        if stack.len() < 2 {
+            return Err(Error::StackUnderflow);
         }
+        let penult_index = stack.len() - 2;
+        let last_index = stack.len() - 1;
         stack.swap(last_index, penult_index);
         Ok(())
     }
