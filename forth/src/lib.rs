@@ -152,9 +152,9 @@ impl Forth {
                 if let Some(&fun_addr) = possible_fun {
                     Bytecode::Call(fun_addr as u16)
                 } else {
-                    return Err(Error::UnknownWord)
+                    return Err(Error::UnknownWord);
                 }
-            },
+            }
             "+" => Bytecode::Add,
             "-" => Bytecode::Sub,
             "/" => Bytecode::Div,
@@ -166,7 +166,7 @@ impl Forth {
             _ if instr.chars().all(|b| b.is_digit(10)) => {
                 let num = instr.parse().map_err(|_| Error::InvalidWord)?;
                 B::Push(num)
-            },
+            }
             _ => return Err(Error::UnknownWord),
         };
         Ok(ret)
