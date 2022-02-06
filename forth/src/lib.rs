@@ -1,5 +1,18 @@
-// Rewrite as a real bytecode compiler.
-use std::collections::HashMap;
+// Cursed subset of forth with a single-pass-compiler-vm
+// Author: Axel Viala <axel.viala@darnuria.eu>
+// Licence MIT
+// To the dear reader: It's my first virtual machine ever.
+// it's cursed to the bones but I'am proud of it.
+// Did with with some inspiration from craftingInterpreters book
+// Based on the exercism eponym rust exercise.
+//
+// Some constrain like Eval retaining call_site is needed by exercice.
+//
+// Maybe will expand it.
+
+/// A toy Forth stack machine with a Virtual machine
+
+use std::{collections::HashMap, fmt::Display};
 
 pub type Value = i16;
 pub type Result = std::result::Result<(), Error>;
