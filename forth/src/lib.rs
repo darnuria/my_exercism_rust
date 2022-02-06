@@ -49,14 +49,15 @@ impl Forth {
     }
 
     fn over(&mut self) -> Result {
-        self.stack.last().ok_or(Error::StackUnderflow)?;
-        let penult_index = self
+        let over = *self
             .stack
-            .len()
-            .checked_sub(2)
+            .iter()
+            .rev()
+            .skip(1)
+            .next()
             .ok_or(Error::StackUnderflow)?;
-        let penult = *self.stack.get(penult_index).ok_or(Error::StackUnderflow)?;
-        self.stack.push(penult);
+        assert!(self.stack.len() >= 2);
+        self.stack.push(over);
         Ok(())
     }
 
@@ -76,7 +77,7 @@ impl Forth {
         self.stack.pop().ok_or(Error::StackUnderflow)?;
         Ok(())
     }
-    
+
     fn bin_operator(&mut self, op: &[u8]) -> Result {
         let a = self.stack.pop().ok_or(Error::StackUnderflow)?;
         let b = self.stack.pop().ok_or(Error::StackUnderflow)?;
