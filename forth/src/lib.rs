@@ -91,13 +91,13 @@ impl Forth {
             } else {
                 return Ok(());
             };
-            println!(
-                "OPCODE: {:?}, STACK_TOP: {:?}, PC: {:?}, ACTUAL_MEMORY: {:p}",
-                op,
-                self.stack.last(),
-                pc,
-                actual_memory
-            );
+            // println!(
+            //     "OPCODE: {:?}, STACK_TOP: {:?}, PC: {:?}, ACTUAL_MEMORY: {:p}",
+            //     op,
+            //     self.stack.last(),
+            //     pc,
+            //     actual_memory
+            // );
             match *op {
                 Bytecode::Return => {
                     pc = call_pc.pop().ok_or(Error::StackUnderflow)?;
@@ -178,7 +178,6 @@ impl Forth {
     pub fn compile(&mut self, input: &str) -> Result {
         let mut instructions = input.split_whitespace();
         while let Some(instruction) = instructions.next() {
-            println!("{}", instruction);
             if instruction == ":" {
                 let instructions = &mut instructions;
                 let name = instructions.next().ok_or(Error::InvalidWord)?;
