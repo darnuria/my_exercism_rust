@@ -19,7 +19,9 @@ pub type Result = std::result::Result<(), Error>;
 
 pub struct Forth {
     stack: Vec<i16>,
-    code: HashMap<String, String>,
+    call_table: HashMap<[u8; 4], (usize, usize)>,
+    main_mem: Vec<Bytecode>,
+    functions_mem: Vec<Bytecode>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -45,8 +47,10 @@ impl Default for Forth {
 impl Forth {
     pub fn new() -> Forth {
         Forth {
+            call_table: HashMap::with_capacity(8),
             stack: Vec::with_capacity(128),
-            code: HashMap::new(),
+            main_mem: Vec::with_capacity(64),
+            functions_mem: Vec::with_capacity(64),
         }
     }
 
@@ -54,117 +58,218 @@ impl Forth {
         &self.stack
     }
 
-
-    fn dup(&mut self) -> Result {
-        let d = *self.stack.last().ok_or(Error::StackUnderflow)?;
-        self.stack.push(d);
+    fn dup(stack: &mut Vec<i16>) -> Result {
+        let d = *stack.last().ok_or(Error::StackUnderflow)?;
+        stack.push(d);
         Ok(())
     }
 
-    fn over(&mut self) -> Result {
-        let over = *self
-            .stack
+    fn over(stack: &mut Vec<i16>) -> Result {
+        let over = *stack
             .iter()
             .rev()
             .skip(1)
             .next()
             .ok_or(Error::StackUnderflow)?;
-        assert!(self.stack.len() >= 2);
-        self.stack.push(over);
+        assert!(stack.len() >= 2);
+        stack.push(over);
         Ok(())
     }
 
-    fn swap(&mut self) -> Result {
-        let len = self.stack.len();
+    fn swap(stack: &mut Vec<i16>) -> Result {
+        let len = stack.len();
         let penult_index = len.checked_sub(2).ok_or(Error::StackUnderflow)?;
         let last_index = len.checked_sub(1).ok_or(Error::StackUnderflow)?;
         // Awkard overflow check
         {
-            self.stack.get(penult_index).ok_or(Error::StackUnderflow)?;
-            self.stack.last().ok_or(Error::StackUnderflow)?;
+            stack.get(penult_index).ok_or(Error::StackUnderflow)?;
+            stack.last().ok_or(Error::StackUnderflow)?;
         }
-        self.stack.swap(last_index, penult_index);
-        Ok(())
-    }
-    fn pop(&mut self) -> Result {
-        self.stack.pop().ok_or(Error::StackUnderflow)?;
+        stack.swap(last_index, penult_index);
         Ok(())
     }
 
-    fn bin_operator(&mut self, op: &[u8]) -> Result {
-        let a = self.stack.pop().ok_or(Error::StackUnderflow)?;
-        let b = self.stack.pop().ok_or(Error::StackUnderflow)?;
+    fn exec(&mut self) -> Result {
+        let mut pc = 0_usize;
+        let mut actual_memory = &self.main_mem;
+        let mut call_stack = Vec::with_capacity(128);
+        loop {
+            let op = if let Some(op) = actual_memory.get(pc) {
+                op
+            } else {
+                return Ok(());
+            };
+            println!(
+                "OPCODE: {:?}, STACK_TOP: {:?}, PC: {:?}, ACTUAL_MEMORY: {:p}",
+                op,
+                self.stack.last(),
+                pc,
+                actual_memory
+            );
+            match *op {
+                Bytecode::Noop => continue,
+                Bytecode::Return(addr) => {
+                    pc = addr as usize;
+                    actual_memory = call_stack.pop().ok_or(Error::StackUnderflow)?;
+                    continue;
+                }
+                Bytecode::Call(addr) => {
+                    call_stack.push(actual_memory);
+                    pc = addr as usize;
+                    actual_memory = &self.functions_mem;
+                    continue;
+                }
+                Bytecode::Pop => {
+                    self.stack.pop().ok_or(Error::StackUnderflow)?;
+                }
+                Bytecode::Dup => {
+                    Forth::dup(&mut self.stack)?;
+                }
+                Bytecode::Swap => {
+                    Forth::swap(&mut self.stack)?;
+                }
+                Bytecode::Over => {
+                    Forth::over(&mut self.stack)?;
+                }
+                Bytecode::Push(val) => self.stack.push(val),
+                Bytecode::Add | Bytecode::Sub | Bytecode::Div | Bytecode::Mul => {
+                    Forth::exec_binop(&mut self.stack, op)?;
+                }
+            }
+            pc += 1;
+        }
+    }
+
+    fn exec_binop(stack: &mut Vec<i16>, op: &Bytecode) -> Result {
+        let a = stack.pop().ok_or(Error::StackUnderflow)?;
+        let b = stack.pop().ok_or(Error::StackUnderflow)?;
         let result = match op {
-            b"+" => a + b,
-            b"-" => b - a,
-            b"/" => b.checked_div(a).ok_or(Error::DivisionByZero)?,
-            b"*" => a * b,
+            Bytecode::Add => a + b,
+            Bytecode::Sub => b - a,
+            Bytecode::Div => b.checked_div(a).ok_or(Error::DivisionByZero)?,
+            Bytecode::Mul => a * b,
             _ => unreachable!(),
         };
-        self.stack.push(result);
+        stack.push(result);
         Ok(())
     }
 
-    // pub parse_function(&mut self, input: &str) -> Result {
-
-    // }
-
-    fn parse(&mut self, instr: &[u8]) -> Result {
-        match instr {
-            b"+" | b"-" | b"/" | b"*" => self.bin_operator(instr),
-            b"dup" => self.dup(),
-            b"drop" => self.pop(),
-            b"swap" => self.swap(),
-            b"over" => self.over(),
-            word if word.iter().all(|&b| (b as char).is_digit(10)) => {
-                let utf8ed_number = unsafe { std::str::from_utf8_unchecked(word) };
-                self.stack
-                    .push(utf8ed_number.parse().map_err(|_| Error::InvalidWord)?);
-                    Ok(())
+    fn compile_single(
+        &self,
+        instr: &str,
+        instr_buff: &[u8],
+    ) -> std::result::Result<Bytecode, Error> {
+        use Bytecode as B;
+        let ret = match &instr_buff[..instr.len()] {
+            b"+" => Bytecode::Add,
+            b"-" => Bytecode::Sub,
+            b"/" => Bytecode::Div,
+            b"*" => Bytecode::Mul,
+            b"dup" => Bytecode::Dup,
+            b"drop" => Bytecode::Pop,
+            b"swap" => Bytecode::Swap,
+            b"over" => Bytecode::Over,
+            _ if instr.chars().all(|b| b.is_digit(10)) => {
+                let num = instr.parse().map_err(|_| Error::InvalidWord)?;
+                B::Push(num)
             }
             _ => return Err(Error::UnknownWord),
-        }
+        };
+        Ok(ret)
     }
 
-    pub fn eval(&mut self, input: &str) -> Result {
-        let mut instructions = input.split_whitespace();       
+    pub fn compile(&mut self, input: &str) -> Result {
+        let mut instructions = input.split_whitespace();
         while let Some(instruction) = instructions.next() {
             // Happy-path
             // Get an array of four bytes, copy the instruction
             // Then match.
-            let mut instr_buff = [0_u8; 4];
-            copy_bytes(instruction.as_bytes(), &mut instr_buff);
-            instr_buff.make_ascii_lowercase();
-            let instr = &instr_buff[..instruction.len()];
-
-
-
-            if instr == b":" {
+            let instruction = &*instruction.to_ascii_lowercase();
+            println!("{}", instruction);
+            if instruction == ":" {
                 let instructions = &mut instructions;
                 let name = instructions.next().ok_or(Error::InvalidWord)?;
+
                 if name.chars().all(|b| b.is_digit(10)) {
                     return Err(Error::InvalidWord);
                 }
-                let sep = " ";
+                let iter = instructions.take_while(|&c| c != ";");
+
+                assert!(self.functions_mem.len() <= 2_usize.pow(16) - 1);
+                let callsite = self.functions_mem.len();
+
                 let mut count = 0;
-                let instructions = instructions
-                    .take_while(|&c| { count += 1; c != ";"})
-                    .flat_map(|s| s.chars().chain(sep.chars()))
-                    //.map(|s| s.to_string())
-                    .collect::<_>();
-                if count < 2 {
+                for instruction in iter {
+                    count += 1;
+                    let mut instr_buff = [0_u8; 4];
+                    copy_bytes(instruction.as_bytes(), &mut instr_buff);
+                    instr_buff.make_ascii_lowercase();
+                    self.functions_mem
+                        .push(self.compile_single(instruction, &instr_buff)?);
+                }
+                // Shall be + 1?
+
+                // placeholder changed with a TRICK
+                let mut name_buff = [0_u8; 4];
+                copy_bytes(name.as_bytes(), &mut name_buff);
+                name_buff.make_ascii_lowercase();
+                self.functions_mem.push(Bytecode::Noop);
+                self.call_table
+                    .insert(name_buff, (callsite, self.functions_mem.len() - 1));
+
+                if count < 1 {
                     return Err(Error::InvalidWord);
                 }
-                self.code.insert(name.to_ascii_lowercase(), instructions);
                 continue;
             }
 
-            if let Some(code) = self.code.get(instruction).cloned() {
-                println!("{}", code);
-                self.eval(&code)?;
+            let mut instr_buff = [0_u8; 4];
+            copy_bytes(instruction.as_bytes(), &mut instr_buff);
+            instr_buff.make_ascii_lowercase();
+            if let Some(&(fun_addr, end_funaddr)) = self.call_table.get(&instr_buff) {
+                self.main_mem.push(Bytecode::Call(fun_addr as u16));
+                let main_addr = self.main_mem.len() as u16;
+                self.functions_mem[end_funaddr] = Bytecode::Return(main_addr);
+            } else {
+                let mut instr_buff = [0_u8; 4];
+                copy_bytes(instruction.as_bytes(), &mut instr_buff);
+                instr_buff.make_ascii_lowercase();
+                self.main_mem
+                    .push(self.compile_single(instruction, &instr_buff)?);
             }
-            self.parse(instr)?
         }
+
         Ok(())
+    }
+
+    pub fn eval(&mut self, input: &str) -> Result {
+        println!("PROGRAM {}", input);
+        self.compile(input)?;
+        println!("MHHH COMPILED THAT DELICOUS PROGRAM");
+        println!("main  memory:{:?}", self.main_mem);
+        println!("funct memory:{:?}", self.functions_mem);
+        self.exec()
+    }
+}
+
+#[derive(Debug)]
+enum Bytecode {
+    Noop,
+    Return(u16),
+    Call(u16),
+    Pop,
+    Dup,
+    Swap,
+    Over,
+    Push(i16),
+    Add,
+    Sub,
+    Div,
+    Mul,
+}
+
+impl Display for Bytecode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Debug::fmt(self, f)
     }
 }
