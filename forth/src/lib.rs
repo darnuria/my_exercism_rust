@@ -68,8 +68,7 @@ impl Forth {
         let over = *stack
             .iter()
             .rev()
-            .skip(1)
-            .next()
+            .nth(1)
             .ok_or(Error::StackUnderflow)?;
         assert!(stack.len() >= 2);
         stack.push(over);
