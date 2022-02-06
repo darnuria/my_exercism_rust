@@ -103,6 +103,13 @@ fn dup() {
 }
 
 #[test]
+fn dup_three() {
+    let mut f = Forth::new();
+    assert!(f.eval("1 dup dup dup").is_ok());
+    assert_eq!(vec![1, 1, 1, 1], f.stack());
+}
+
+#[test]
 fn dup_top_value_only() {
     let mut f = Forth::new();
     assert!(f.eval("1 2 dup").is_ok());
@@ -226,7 +233,7 @@ fn execute_in_the_right_order() {
 #[test]
 fn redefining_an_existing_word() {
     let mut f = Forth::new();
-    assert!(f.eval(": foo dup ;").is_ok());
+    assert_eq!(f.eval(": foo dup ;"), Ok(()));
     assert!(f.eval(": foo dup dup ;").is_ok());
     assert!(f.eval("1 foo").is_ok());
     assert_eq!(vec![1, 1, 1], f.stack());
