@@ -1,38 +1,28 @@
 /// Check a Luhn checksum.
 pub fn is_valid(code: &str) -> bool {
-    // is there a size limit?
-    let mut luhn = vec![];
-    for x in code.chars() {
-        if x.is_ascii_digit() {
-            let x = x.to_digit(10).unwrap();
-            luhn.push(x);
-        } else if x == ' ' {
-            continue;
+    let iter = code.chars().rev().filter(|c| !c.is_whitespace());
+
+    let mut i = 0;
+    let mut sum = 0;
+    for n in iter {
+        let n = if let Some(n) = n.to_digit(10) {
+            n
         } else {
             return false;
-        }
-    }
+        };
 
-    if luhn.len() < 2 {
-        return false;
-    }
-
-    let parity = (luhn.len() - 2) % 2;
-    let sum = luhn.iter()
-        .enumerate()
-        .rev()
-        .map(|(i, &n)| {
-            if i % 2 == parity {
-                let doubled = n * 2;
-                if doubled > 9 {
-                    doubled - 9
-                } else {
-                    doubled
-                }
+        let n = if i % 2 == 1 {
+            let doubled = n * 2;
+            if doubled > 9 {
+                doubled - 9
             } else {
-                n
+                doubled
             }
-        })
-        .sum::<u32>();
-        sum % 10 == 0
+        } else {
+            n
+        };
+        i += 1;
+        sum += n;
+    }
+    sum % 10 == 0 && i > 1
 }
