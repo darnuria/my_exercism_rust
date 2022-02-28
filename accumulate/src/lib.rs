@@ -1,4 +1,8 @@
 /// What should the type of _function be?
-pub fn map(input: Vec<i32>, _function: ???) -> Vec<i32> {
-    unimplemented!("Transform input vector {:?} using passed function", input);
+pub fn map<T, E>(input: Vec<T>, mut function: impl FnMut(T) -> E) -> Vec<E> {
+    let mut new = Vec::with_capacity(input.len());
+    for i in input.into_iter() {
+        new.push(function(i));
+    }
+    new
 }
