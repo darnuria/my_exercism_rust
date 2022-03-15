@@ -31,5 +31,28 @@ pub fn encode(source: &str) -> String {
 }
 
 pub fn decode(source: &str) -> String {
-    unimplemented!("Return the run-length decoding of {}.", source);
+    let mut decoded = String::with_capacity(source.len() * 2);
+    let mut num = [ 0u8; 6];
+    let mut num_idx = 0;
+    for c in source.chars() {
+        match c {
+            '0'..='9' => {
+                assert!(num_idx < 6);
+                num[num_idx] = c as u8;
+                num_idx += 1; 
+            },
+            c => {
+                let count = if num_idx > 0 {
+                    u32::from_str_radix(std::str::from_utf8(&num[..num_idx]).unwrap(), 10).unwrap()
+                } else {
+                    1
+                };
+                num_idx = 0;
+                for _ in 1..=count {
+                    decoded.push(c);
+                }
+            }
+        }
+    }
+    decoded
 }
